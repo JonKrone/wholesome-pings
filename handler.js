@@ -61,10 +61,10 @@ module.exports.wholesomePing = async (event, context) => {
       const { permalink, url, title } = pick
       // const recipient = selectOne(testEmails)
 
-      console.log('data!:', pick)
-      console.log('reddit link:', permalink)
-      console.log('image/source url:', url)
-      console.log('title:', title)
+      // console.log('data!:', pick)
+      // console.log('reddit link:', permalink)
+      // console.log('image/source url:', url)
+      // console.log('title:', title)
 
       return req
         .post(
@@ -79,26 +79,13 @@ module.exports.wholesomePing = async (event, context) => {
             body: {
               to: ['+18044058142'],
               from: '+18042344180',
-              text: 'hey!',
+              text: 'hey! ' + title,
               applicationId: 'a-57z354bt2znuxl2d3vazjqq',
               tag: 'test message',
             },
           }
         )
         .then(data => console.log('data:', data))
-
-      // $('img').attr('src', url)
-
-      // console.log('$:', $)
-
-      // const msg = {
-      //   to: selectOne(testEmails).email,
-      //   from: 'test@example.com',
-      //   subject: 'Wholesome hello!',
-      //   text: 'and easy to do anywhere, even with Node.js',
-      //   html: $.html(),
-      // }
-      // return sgMail.send(msg)
     })
     .catch(error => {
       console.log('error:', error)
