@@ -1,21 +1,30 @@
 'use strict'
 
+const { readFileSync } = require('fs')
+const { resolve } = require('path')
 const req = require('request-promise-native')
-// const sgMail = require('@sendgrid/mail')
-// const cheerio = require('cheerio')
+const sgMail = require('@sendgrid/mail')
+const cheerio = require('cheerio')
 
-// sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-// const $ = cheerio.load('./wholesome-template.html')
+sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+const $ = cheerio.load(readFileSync(resolve('./wholesome-template.html')))
 
-const baseUrl = 'https://reddit.com/r'
+const baseUrl = 'https://reddit.com'
 const wholesomeSubreddits = [
-  'RandomKindness',
   'UpliftingNews',
-  'WholesomeMemes',
+  'Aww',
+  'AccidentalRenaissance',
+  'OCPoetry',
+  'FoodPorn',
+  'Haiku',
+  'Poetry',
+  'HumansBeingBros',
 ]
 
-const multiredditUrl = `${baseUrl}/${wholesomeSubreddits.join('+')}`
+const multiredditUrl = `${baseUrl}/r/${wholesomeSubreddits.join('+')}`
 const topResultsUrl = `${multiredditUrl}/top/.json?sort=top&t=week`
+
+const recipient = { name: 'Recip', email: 'JonathanKrone@gmail.com' }
 
 // const emails = [
 //   { name: 'Lara', email: 'lara.christley@gmail.com' },
@@ -30,84 +39,71 @@ const topResultsUrl = `${multiredditUrl}/top/.json?sort=top&t=week`
 //   { name: 'Amrita', email: 'amrita.karia@gmail.com' },
 // ]
 
-// const testEmails = [
-//   //   { name: 'Lara', email: 'lara.christley@gmail.com' },
-//   //   { name: 'Anne', email: 'annie@anniehayeswellness.com' },
-//   //   { name: 'Caitlin', email: 'caitlinrduff@gmail.com' },
-//   //   { name: 'Bryan', email: 'bstarry44@q.com' },
-//   //   { name: 'Andrew', email: 'leonard.andrew13@gmail.com' },
-//   { name: 'JoJo', email: 'JonathanKrone+1@gmail.com' },
-//   { name: 'Jonathan', email: 'JonathanKrone+2@gmail.com' },
-//   { name: 'Jo', email: 'JonathanKrone+3@gmail.com' },
-//   //   { name: 'Ashley', email: 'ashleykatzakian@gmail.com' },
-//   //   { name: 'Amrita', email: 'amrita.karia@gmail.com' },
-// ]
+const testEmails = [
+  { name: 'JoJo', email: 'JonathanKrone+1@gmail.com' },
+  { name: 'Jonathan', email: 'JonathanKrone+2@gmail.com' },
+  { name: 'Jo', email: 'JonathanKrone+3@gmail.com' },
+]
+
+const subjects = [
+  'Wham!',
+  'Bam!',
+  'Ping!',
+  'Pow!',
+  'Woah!',
+  'Wow!',
+  'Shazam!',
+  'Yee haw!',
+  'Well shiver me timbers',
+]
 
 module.exports.wholesomePing = async (event, context) => {
-  // receive trigger
-  // get top posts of the last week
-  // format them
-  // send them out to a randomly selected friend, with the recipient cc'd
+  return req(topResultsUrl, { json: true }).then(resp => {
+    const topTen =
+      resp &&
+      resp.data &&
+      resp.data.children &&
+      resp.data.children.filter(f => f.data.is_video).slice(0, 10)
+    const pick = selectOne(topTen).data
+    const redditLink = `${baseUrl}${pick.permalink}`
 
-  return req(topResultsUrl, { json: true })
-    .then(resp => {
-      // console.log('keys:', resp.json())
-      const topTen =
-        resp &&
-        resp.data &&
-        resp.data.children &&
-        resp.data.children.slice(0, 10)
-      const pick = selectOne(topTen)
-      const { permalink, url, title } = pick
-      // const recipient = selectOne(testEmails)
+    // console.log('data!:', pick)
 
-      // console.log('data!:', pick)
-      // console.log('reddit link:', permalink)
-      // console.log('image/source url:', url)
-      // console.log('title:', title)
+    // mutate the html.. because it's the robust way..
+    $('.post-title').text(pick.title)
+    $('.post-permalink').html(
+      `<a href="${redditLink}">${pick.subreddit_name_prefixed}</a>`
+    )
+    $('.post-image-link').attr('href', redditLink)
 
-      return req
-        .post(
-          'https://api.catapult.inetwork.com/v2/users/u-75277up3bzfsbshdt4xnxdq/messages',
-          {
-            json: true,
-            headers: { 'content-type': 'application/json' },
-            auth: {
-              user: 't-4y64pyotd4ptvcsz37ifc7q',
-              pass: 'nizkm5lxmx6m3nhg2g4ejjn2vlovmaoy4hen23y',
-            },
-            body: {
-              to: ['+18044058142'],
-              from: '+18042344180',
-              text: 'hey! ' + title,
-              applicationId: 'a-57z354bt2znuxl2d3vazjqq',
-              tag: 'test message',
-            },
-          }
-        )
-        .then(data => console.log('data:', data))
+    if (pick.is_self) {
+      // text-only posts are special beause they don't have images!
+      $('.post-img-tag').remove()
+
+      if (pick.selftext_html) {
+        $('.self-post-content').html(pick.selftext)
+      } else {
+        $('.self-post-content').text(pick.title)
+      }
+    } else if (pick.is_video) {
+      // videos are special because emails don't play them and
+      // they don't have good images
+      $('.post-img-tag').attr('src', pick.thumbnail)
+      $('.self-post-content').text('Click to see the video')
+    } else {
+      $('.post-img-tag').attr('src', pick.url)
+      $('.post-image-link').attr('href', redditLink)
+      $('.self-post-content').remove()
+    }
+
+    console.log('sending')
+    return sgMail.send({
+      to: selectOne(testEmails),
+      from: 'MrPresident@noreply.net',
+      subject: selectOne(subjects),
+      html: $.html(),
     })
-    .catch(error => {
-      console.log('error:', error)
-      // send email to krone
-    })
-
-  // https: return {
-  //   statusCode: 200,
-  //   body: JSON.stringify({
-  //     message: 'Go Serverless v1.0! Your function executed successfully!',
-  //     input: event,
-  //   }),
-  // }
-
-  // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-  // return {
-  //   message: 'Go Serverless v1.0! Your function executed successfully!',
-  //   event,
-  // }
-
-  // failsafe
-  context.done()
+  })
 }
 
 function selectOne(list) {
@@ -119,7 +115,7 @@ function selectOne(list) {
   return list[rndIdx]
 }
 
-// data structure:
+// reddit response structure:
 // {
 //   kind: string,
 //   data: {
