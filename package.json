@@ -1,7 +1,7 @@
 {
   "name": "wholesome-pings",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "handler.js",
   "author": "Jonathan Krone <JonathanKrone@gmail.com>",
   "license": "MIT",
   "private": false,
@@ -13,10 +13,6 @@
   "dependencies": {
     "@sendgrid/mail": "^6.3.1",
     "cheerio": "^1.0.0-rc.2",
-    "request-promise-native": "^1.0.5",
-    "twilio": "^3.25.0"
-  },
-  "devDependencies": {
-    "@types/twilio": "^0.0.10"
+    "request-promise-native": "^1.0.5"
   }
 }
