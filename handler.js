@@ -5,9 +5,11 @@ const { resolve } = require('path')
 const req = require('request-promise-native')
 const sgMail = require('@sendgrid/mail')
 const cheerio = require('cheerio')
+const { recipient, emails } = require('./secrets/config')
 
 sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-const $ = cheerio.load(readFileSync(resolve('./wholesome-template.html')))
+const htmlTemplateString = readFileSync(resolve('./wholesome-template.html'))
+const $ = cheerio.load(htmlTemplateString)
 
 const baseUrl = 'https://reddit.com'
 const wholesomeSubreddits = [
@@ -22,23 +24,7 @@ const wholesomeSubreddits = [
 ]
 
 const multiredditUrl = `${baseUrl}/r/${wholesomeSubreddits.join('+')}`
-const topResultsUrl = `${multiredditUrl}/top/.json?sort=top&t=week`
-
-const recipient = { name: 'Amrita', email: 'amrita.karia@gmail.com' }
-
-const emails = [
-  { name: 'Lara', email: 'lara.christley@gmail.com' },
-  { name: 'Anne', email: 'annie@anniehayeswellness.com' },
-  { name: 'Caitlin', email: 'caitlinrduff@gmail.com' },
-  { name: 'Bryan', email: 'bstarry44@q.com' },
-  { name: 'Andrew', email: 'leonard.andrew13@gmail.com' },
-  { name: 'Kari', email: 'kariannew29@gmail.com' },
-  { name: 'Jonathan', email: 'JonathanKrone@gmail.com' },
-  { name: 'Joe', email: 'joe.wayne.popham@gmail.com' },
-  { name: 'Ashley', email: 'ashleykatzakian@gmail.com' },
-  { name: 'Lahli', email: 'lolltrevis@gmail.com' },
-  { name: 'Danielle', email: 'dajackson95@gmail.com' },
-]
+const topResultsUrl = `${multiredditUrl}/.json`
 
 const subjects = [
   'Wham!',
@@ -54,8 +40,7 @@ const subjects = [
 
 module.exports.wholesomePing = async (event, context) => {
   return req(topResultsUrl, { json: true }).then(resp => {
-    const topTen =
-      resp && resp.data && resp.data.children && resp.data.children.slice(0, 20)
+    const topTen = resp.data.children.slice(0, 20)
     const pick = selectOne(topTen).data
     const redditLink = `${baseUrl}${pick.permalink}`
 
@@ -71,7 +56,7 @@ module.exports.wholesomePing = async (event, context) => {
       $('.post-img-tag').remove()
 
       if (pick.selftext_html) {
-        $('.self-post-content').html(pick.selftext)
+        $('.self-post-content').html(pick.selftext.split(/\n/).join('<br/>'))
       } else {
         $('.self-post-content').text(pick.title)
       }

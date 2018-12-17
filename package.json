@@ -7,8 +7,8 @@
   "private": false,
   "scripts": {
     "deploy": "sls deploy -f wholesome-pings",
-    "invoke": "sls invoke -f wholesome-pings",
-    "local": "sls invoke local -f wholesome-pings"
+    "invoke": "sls invoke -e TESTING=true -f wholesome-pings",
+    "local": "sls invoke local -e TESTING=true -f wholesome-pings"
   },
   "dependencies": {
     "@sendgrid/mail": "^6.3.1",
