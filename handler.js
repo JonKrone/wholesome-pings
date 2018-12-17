@@ -24,25 +24,20 @@ const wholesomeSubreddits = [
 const multiredditUrl = `${baseUrl}/r/${wholesomeSubreddits.join('+')}`
 const topResultsUrl = `${multiredditUrl}/top/.json?sort=top&t=week`
 
-const recipient = { name: 'Recip', email: 'JonathanKrone@gmail.com' }
+const recipient = { name: 'Amrita', email: 'amrita.karia@gmail.com' }
 
-// const emails = [
-//   { name: 'Lara', email: 'lara.christley@gmail.com' },
-//   { name: 'Anne', email: 'annie@anniehayeswellness.com' },
-//   { name: 'Caitlin', email: 'caitlinrduff@gmail.com' },
-//   { name: 'Bryan', email: 'bstarry44@q.com' },
-//   { name: 'Andrew', email: 'leonard.andrew13@gmail.com' },
-//   { name: 'Kari', email: 'kariannew29@gmail.com' },
-//   { name: 'Jonathan', email: 'JonathanKrone@gmail.com' },
-//   { name: 'Joe', email: 'joe.wayne.popham@gmail.com' },
-//   { name: 'Ashley', email: 'ashleykatzakian@gmail.com' },
-//   { name: 'Amrita', email: 'amrita.karia@gmail.com' },
-// ]
-
-const testEmails = [
-  { name: 'JoJo', email: 'JonathanKrone+1@gmail.com' },
-  { name: 'Jonathan', email: 'JonathanKrone+2@gmail.com' },
-  { name: 'Jo', email: 'JonathanKrone+3@gmail.com' },
+const emails = [
+  { name: 'Lara', email: 'lara.christley@gmail.com' },
+  { name: 'Anne', email: 'annie@anniehayeswellness.com' },
+  { name: 'Caitlin', email: 'caitlinrduff@gmail.com' },
+  { name: 'Bryan', email: 'bstarry44@q.com' },
+  { name: 'Andrew', email: 'leonard.andrew13@gmail.com' },
+  { name: 'Kari', email: 'kariannew29@gmail.com' },
+  { name: 'Jonathan', email: 'JonathanKrone@gmail.com' },
+  { name: 'Joe', email: 'joe.wayne.popham@gmail.com' },
+  { name: 'Ashley', email: 'ashleykatzakian@gmail.com' },
+  { name: 'Lahli', email: 'lolltrevis@gmail.com' },
+  { name: 'Danielle', email: 'dajackson95@gmail.com' },
 ]
 
 const subjects = [
@@ -60,14 +55,9 @@ const subjects = [
 module.exports.wholesomePing = async (event, context) => {
   return req(topResultsUrl, { json: true }).then(resp => {
     const topTen =
-      resp &&
-      resp.data &&
-      resp.data.children &&
-      resp.data.children.filter(f => f.data.is_video).slice(0, 10)
+      resp && resp.data && resp.data.children && resp.data.children.slice(0, 20)
     const pick = selectOne(topTen).data
     const redditLink = `${baseUrl}${pick.permalink}`
-
-    // console.log('data!:', pick)
 
     // mutate the html.. because it's the robust way..
     $('.post-title').text(pick.title)
@@ -96,23 +86,29 @@ module.exports.wholesomePing = async (event, context) => {
       $('.self-post-content').remove()
     }
 
-    console.log('sending')
+    const to = selectOne(emails)
     return sgMail.send({
-      to: selectOne(testEmails),
-      from: 'MrPresident@noreply.net',
+      to: [recipient, to],
+      from: 'MmePresidente@noreply.net',
       subject: selectOne(subjects),
       html: $.html(),
     })
   })
 }
 
-function selectOne(list) {
+function selectOne(list, ignore) {
   if (!Array.isArray(list)) {
     throw Error('selectOne must be called on an array of items')
   }
 
   const rndIdx = Math.floor(Math.random() * list.length)
-  return list[rndIdx]
+  const result = list[rndIdx]
+
+  if (ignore && result === ignore) {
+    return selectOne(list, ignore)
+  }
+
+  return result
 }
 
 // reddit response structure:
